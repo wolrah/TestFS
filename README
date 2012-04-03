@@ -1,0 +1,9 @@
+TestFS
+
+This project is nothing but a test filesystem implemented through FUSE using python-fuse.
+
+It is a learning project to teach myself how to use FUSE.
+
+While it may at times have practical functionality, nothing is ever guaranteed.
+
+This project may be considered 100% public domain, no rights reserved.  If somehow something in it is worth copying, have at it.
