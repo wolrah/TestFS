@@ -1,133 +1,81 @@
 #!/usr/bin/env python
+"""
+TestFS
+An ongoing attempt at learning by doing with Python-FUSE
+Copyright (c) 2012 Sean Harlow (firstname) at (firstname)(lastname) dot info
+
+Released under the BSD license, see COPYING file for info.
+"""
 
 import errno, fuse, stat, time
+import logging as log
 
+# Setup FUSE
 fuse.fuse_python_api = (0, 2)
 
+# Setup logging
+log.basicConfig(level=log.DEBUG)
+
+directories = ['/', '/testdir1', '/testdir2', '/testdir3', '/testdir1/testsubdir']
+files = ['/file1.txt', '/file2.txt', '/testdir2/file3.txt']
+dummytext = 'This is a dummy file in a TestFS filesystem.  All files on the system will return this text.'
+
+class EmptyStat(fuse.Stat):
+	def __init__(self):
+		self.st_mode = 0
+		self.st_ino = 0
+		self.st_dev = 0
+		self.st_nlink = 0
+		self.st_uid = 0
+		self.st_gid = 0
+		self.st_size = 0
+		self.st_atime = int(time.time())
+		self.st_mtime = 0
+		self.st_ctime = 0
+
 class TestFS(fuse.Fuse):
-	"""
-	"""
-
 	def __init__(self, *args, **kw):
+		log.info('Initializing FUSE')
 		fuse.Fuse.__init__(self, *args, **kw)
-
-		print 'Init complete.'
-
+		log.info('Initializing TestFS')
+	
 	def getattr(self, path):
-		"""
-		- st_mode (protection bits)
-		- st_ino (inode number)
-		- st_dev (device)
-		- st_nlink (number of hard links)
-		- st_uid (user ID of owner)
-		- st_gid (group ID of owner)
-		- st_size (size of file, in bytes)
-		- st_atime (time of most recent access)
-		- st_mtime (time of most recent content modification)
-		- st_ctime (platform dependent; time of most recent metadata change on Unix,
-					or the time of creation on Windows).
-		"""
-
-		print '*** getattr', path
-		
-		if path == '/':  
-			pass  
-		else:  
-			return - errno.ENOENT
-		
-		st = fuse.Stat()
-		st.st_mode = stat.S_IFDIR | 0777
-		st.st_nlink = 2
-		st.st_atime = int(time.time())
-		st.st_mtime = st.st_atime
-		st.st_ctime = st.st_atime
+		log.info('getattr %s', path)
+		st = EmptyStat()
+		# Check above lists for dummy files/folders
+		if path in directories:
+			log.debug('%s is a directory', path)
+			st.st_mode = stat.S_IFDIR | 0755
+			st.st_nlink = 2
+		elif path in files:
+			log.debug('%s is a file', path)
+			st.st_mode = stat.S_IFREG | 0644
+			st.st_nlink = 1
+			st.st_size = len(dummytext)
 		return st
-		#return -errno.ENOSYS
-
-
+	
 	def readdir(self, path, offset):
-		"""
-		return: [[('file1', 0), ('file2', 0), ... ]]
-		"""
+		log.info('readdir %s, %i', path, offset)
+		# The basics
+		yield fuse.Direntry('.')
+		yield fuse.Direntry('..')
+		# Create a new blank list
+		entrylist = []
+		# Get file list
+		for file in files:
+			if (file.startswith(path)) & (len(file.split('/')) == len(path.split('/'))):
+				log.debug('Matched file %s', file)
+				entrylist.append(file[len(path):])
+		# Get directory list
+		for directory in directories:
+			if (directory.startswith(path)) & (len(directory.split('/')) == len(path.split('/'))) & (directory != path):
+				log.debug('Matched directory %s', directory)
+				entrylist.append(directory[len(path):])
+		# Sort it
+		entrylist.sort()
+		for entry in entrylist:
+			yield fuse.Direntry(entry)
 
-		print '*** readdir', path
-		return -errno.ENOSYS
-
-	def mythread ( self ):
-		print '*** mythread'
-		return -errno.ENOSYS
-
-	def chmod ( self, path, mode ):
-		print '*** chmod', path, oct(mode)
-		return -errno.ENOSYS
-
-	def chown ( self, path, uid, gid ):
-		print '*** chown', path, uid, gid
-		return -errno.ENOSYS
-
-	def fsync ( self, path, isFsyncFile ):
-		print '*** fsync', path, isFsyncFile
-		return -errno.ENOSYS
-
-	def link ( self, targetPath, linkPath ):
-		print '*** link', targetPath, linkPath
-		return -errno.ENOSYS
-
-	def mkdir ( self, path, mode ):
-		print '*** mkdir', path, oct(mode)
-		return -errno.ENOSYS
-
-	def mknod ( self, path, mode, dev ):
-		print '*** mknod', path, oct(mode), dev
-		return -errno.ENOSYS
-
-	def open ( self, path, flags ):
-		print '*** open', path, flags
-		return -errno.ENOSYS
-
-	def read ( self, path, length, offset ):
-		print '*** read', path, length, offset
-		return -errno.ENOSYS
-
-	def readlink ( self, path ):
-		print '*** readlink', path
-		return -errno.ENOSYS
-
-	def release ( self, path, flags ):
-		print '*** release', path, flags
-		return -errno.ENOSYS
-
-	def rename ( self, oldPath, newPath ):
-		print '*** rename', oldPath, newPath
-		return -errno.ENOSYS
-
-	def rmdir ( self, path ):
-		print '*** rmdir', path
-		return -errno.ENOSYS
-
-	def statfs ( self ):
-		print '*** statfs'
-		return -errno.ENOSYS
-
-	def symlink ( self, targetPath, linkPath ):
-		print '*** symlink', targetPath, linkPath
-		return -errno.ENOSYS
-
-	def truncate ( self, path, size ):
-		print '*** truncate', path, size
-		return -errno.ENOSYS
-
-	def unlink ( self, path ):
-		print '*** unlink', path
-		return -errno.ENOSYS
-
-	def utime ( self, path, times ):
-		print '*** utime', path, times
-		return -errno.ENOSYS
-
-	def write ( self, path, buf, offset ):
-		print '*** write', path, buf, offset
-		return -errno.ENOSYS
 
 if __name__ == '__main__':  
 	fs = TestFS()
